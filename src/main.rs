@@ -6,24 +6,32 @@ fn to_ctrl_byte(c: char) -> u8 {
     byte & 0b0001_1111
 }
 
+fn die(e: std::io::Error) {
+    panic!("{}", e);
+}
+
 fn main() {
     let _stdout = stdout().into_raw_mode().unwrap();
 
     for b in io::stdin().bytes() {
-        let b = b.unwrap();
-        let c = b as char;
+        match b {
+            Ok(b) => {
+                let c = b as char;
 
-        if c.is_control() {
-            println!("{:?} \r", b);
-        } else {
-            println!("{:?} ({})\r", b, c);
-        }
+                if c.is_control() {
+                    println!("{:?} \r", b);
+                } else {
+                    println!("{:?} ({})\r", b, c);
+                }
 
-        println!("{:#b}\r", b); // binary representation of b
+                // println!("{:#b}\r", b); // binary representation of b
 
-        if b == to_ctrl_byte('q') {
-            println!("Exiting.");
-            break;
+                if b == to_ctrl_byte('q') {
+                    println!("Exiting.");
+                    break;
+                }
+            }
+            Err(err) => die(err),
         }
     }
 }
