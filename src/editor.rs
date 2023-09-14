@@ -3,9 +3,15 @@ use termion::event::Key;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
+pub struct Position {
+    pub x: usize,
+    pub y: usize,
+}
+
 pub struct Editor {
     should_quit: bool,
     terminal: Terminal,
+    cursor_position: Position,
 }
 
 impl Editor {
@@ -27,18 +33,19 @@ impl Editor {
         Self {
             should_quit: false,
             terminal: Terminal::default().expect("Failed to initialize terminal"),
+            cursor_position: Position { x: 0, y: 0 },
         }
     }
 
     fn refresh_screen(&self) -> Result<(), std::io::Error> {
         Terminal::cursor_hide();
-        Terminal::cursor_position(0, 0);
+        Terminal::cursor_position(&Position { x: 0, y: 0 });
         if self.should_quit {
             Terminal::clear_screen();
             println!("Goodbye\r");
         } else {
             self.draw_rows();
-            Terminal::cursor_position(0, 0);
+            Terminal::cursor_position(&self.cursor_position);
         }
         Terminal::cursor_show();
         Terminal::flush()
@@ -49,9 +56,22 @@ impl Editor {
         let pressed_key = Terminal::read_key()?; // If there’s an error, return it, if not, unwrap the value and continue
         match pressed_key {
             Key::Ctrl('q') => self.should_quit = true,
+            Key::Up | Key::Down | Key::Left | Key::Right => self.move_cursor(pressed_key),
             _ => (), // Everything is OK
         }
         Ok(())
+    }
+
+    fn move_cursor(&mut self, key: Key) {
+        let Position { mut x, mut y } = self.cursor_position;
+        match key {
+            Key::Up => y = y.saturating_sub(1), // saturating_sub() is a method on the usize type that subtracts 1 from the value unless it’s already 0, in which case it returns 0
+            Key::Down => y = y.saturating_add(1),
+            Key::Left => x = x.saturating_sub(1),
+            Key::Right => x = x.saturating_add(1),
+            _ => (),
+        }
+        self.cursor_position = Position { x, y };
     }
 
     fn draw_welcome_message(&self) {
