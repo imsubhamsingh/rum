@@ -56,7 +56,14 @@ impl Editor {
         let pressed_key = Terminal::read_key()?; // If there’s an error, return it, if not, unwrap the value and continue
         match pressed_key {
             Key::Ctrl('q') => self.should_quit = true,
-            Key::Up | Key::Down | Key::Left | Key::Right => self.move_cursor(pressed_key),
+            Key::Up
+            | Key::Down
+            | Key::Left
+            | Key::Right
+            | Key::PageUp
+            | Key::PageDown
+            | Key::Home
+            | Key::End => self.move_cursor(pressed_key),
             _ => (), // Everything is OK
         }
         Ok(())
@@ -80,6 +87,10 @@ impl Editor {
                     x = x.saturating_add(1)
                 }
             }
+            Key::PageUp => y = 0,
+            Key::PageDown => y = height,
+            Key::Home => x = 0,
+            Key::End => x = width,
             _ => (),
         }
         self.cursor_position = Position { x, y };
